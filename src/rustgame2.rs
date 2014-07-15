@@ -3,14 +3,12 @@ extern crate rsfml;
 extern crate time;
 
 use rsfml::window::{ContextSettings, VideoMode, event, keyboard, Close};
-use rsfml::graphics::{RenderWindow, Texture, Sprite, Color, Font, Text};
+use rsfml::graphics::{RenderWindow, Texture, Sprite, Color, Font, Text, FloatRect};
 
 struct Entity<'a> {
-    x: i64,
-    y: i64,
-    x_rem: i64,
-    y_rem: i64,
-    speed: u64, // pixels per second
+    x: f32,
+    y: f32,
+    speed: f32, // pixels per second
     sprite: Sprite<'a>,
 }
 
@@ -22,42 +20,81 @@ enum Direction {
 }
 
 impl<'a> Entity<'a> {
-    fn move(&mut self, direction: Direction, dt: u64) {
-        let distance = (self.speed * dt / 1000000000) as i64;
-        let remainder = (self.speed * dt % 1000000000) as i64;
+    fn move(&mut self, direction: Direction, dt: u64, world: &World) {
+        let distance = self.speed * dt as f32 / 1000000000.;
         match direction {
-            North => {
-                self.y -= distance;
-                self.y_rem -= remainder;
-            }
-            East => {
-                self.x += distance;
-                self.x_rem += remainder;
-            }
-            South => {
-                self.y += distance;
-                self.y_rem += remainder;
-            }
-            West => {
-                self.x -= distance;
-                self.x_rem -= remainder;
-            }
+            North => self.y -= distance,
+            East => self.x += distance,
+            South => self.y += distance,
+            West => self.x -= distance,
         }
-        let extra_y = self.y_rem / 1000000000;
-        if extra_y > 1 || extra_y < -1 {
-            self.y += extra_y;
-            self.y_rem = self.y_rem % 1000000000;
-        }
-        let extra_x = self.x_rem / 1000000000;
-        if extra_x > 1 || extra_x < -1 {
-            self.x += extra_x;
-            self.x_rem = self.x_rem % 1000000000;
+
+        let aabb = FloatRect::new(self.x, self.y,
+                                  self.sprite.get_local_bounds().width,
+                                  self.sprite.get_local_bounds().height);
+        for block in world.blocks.iter() {
+            let block_aabb = FloatRect::new(block.x,block.y,
+                                            block.sprite.get_local_bounds().width,
+                                            block.sprite.get_local_bounds().height);
+            if FloatRect::intersects(&aabb, &block_aabb, &FloatRect::new(0.,0.,0.,0.)) {
+                let mut new_x = self.x as i32;
+                let mut new_y = self.y as i32;
+                match direction {
+                    North => {
+                        while new_y < block.y as i32 + block.sprite.get_local_bounds().height as i32 {
+                            new_y += 1;
+                        }
+                    }
+                    East => {
+                        while new_x + self.sprite.get_local_bounds().width as i32 > block.x as i32 {
+                            new_x -= 1;
+                        }
+                    }
+                    South => {
+                        while new_y + self.sprite.get_local_bounds().height as i32 > block.y as i32 {
+                            new_y -= 1;
+                        }
+                    }
+                    West => {
+                        while new_x < block.x as i32 + block.sprite.get_local_bounds().width as i32 {
+                            new_x += 1;
+                        }
+                    }
+                }
+                self.x = new_x as f32;
+                self.y = new_y as f32;
+            }
         }
     }
 
     fn draw(&mut self, w: &mut RenderWindow) {
-        self.sprite.set_position2f(self.x as f32, self.y as f32);
+        self.sprite.set_position2f(self.x, self.y);
         w.draw(&self.sprite);
+    }
+}
+
+struct Block<'a> {
+    x: f32,
+    y: f32,
+    sprite: Sprite<'a>,
+}
+
+impl<'a> std::fmt::Show for Block<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Block{{ x: {}, y: {}}}", self.x, self.y)
+    }
+}
+
+struct World<'a> {
+    blocks: Vec<Block<'a>>,
+}
+
+impl<'a> World<'a> {
+    fn draw(&mut self, w: &mut RenderWindow) {
+        for block in self.blocks.mut_iter() {
+            block.sprite.set_position2f(block.x, block.y);
+            w.draw(&block.sprite);
+        }
     }
 }
 
@@ -74,19 +111,30 @@ fn main () -> () {
         .expect("error creating window");
     window.set_framerate_limit(60);
 
-    let texture = Texture::new_from_file("resources/link.gif").expect("error loading texture");
-    let sprite = Sprite::new_with_texture(&texture).expect("error creating sprite");
+    let player_texture = Texture::new_from_file("resources/link.gif").expect("error loading texture");
+    let block_texture = Texture::new_from_file("resources/block.gif").expect("error loading texture");
+    let player_sprite = Sprite::new_with_texture(&player_texture).expect("error creating sprite");
+    let block_sprite = Sprite::new_with_texture(&block_texture).expect("error creating sprite");
 
     let font = Font::new_from_file("resources/Inconsolata-Regular.ttf").expect("error loading font");
 
     let mut entity = Entity{
-        x: 50,
-        y: 100,
-        x_rem: 0,
-        y_rem: 0,
-        speed: 100,
-        sprite: sprite,
+        x: 50.,
+        y: 100.,
+        speed: 200.,
+        sprite: player_sprite,
     };
+
+    let mut world = World{
+        blocks: Vec::new(),
+    };
+
+    for i in range(0u, 10) {
+        world.blocks.push(Block{ x: (100 + i*32) as f32, y: 50., sprite: block_sprite.clone() });
+        world.blocks.push(Block{ x: (100 + i*32) as f32, y: 150., sprite: block_sprite.clone() });
+    }
+    world.blocks.push(Block{ x: 100., y: 150. + 32., sprite: block_sprite.clone() });
+    world.blocks.push(Block{ x: 100., y: 150. + 64., sprite: block_sprite.clone() });
 
     let mut last_time = time::precise_time_ns();
     let mut fps_last_time = last_time;
@@ -103,10 +151,10 @@ fn main () -> () {
             fps_count = 0;
         }
 
-        if keyboard::is_key_pressed(keyboard::Up) { entity.move(North, dt) }
-        if keyboard::is_key_pressed(keyboard::Right) { entity.move(East, dt) }
-        if keyboard::is_key_pressed(keyboard::Down) { entity.move(South, dt) }
-        if keyboard::is_key_pressed(keyboard::Left) { entity.move(West, dt) }
+        if keyboard::is_key_pressed(keyboard::W) { entity.move(North, dt, &world) }
+        if keyboard::is_key_pressed(keyboard::D) { entity.move(East, dt, &world) }
+        if keyboard::is_key_pressed(keyboard::S) { entity.move(South, dt, &world) }
+        if keyboard::is_key_pressed(keyboard::A) { entity.move(West, dt, &world) }
         for event in window.events() {
             match event {
                 event::KeyPressed{ code: keyboard::Escape, .. } |
@@ -119,8 +167,9 @@ fn main () -> () {
         }
 
         window.clear(&Color::new_RGB(50, 50, 50));
-        window.draw(&fps_text);
         entity.draw(&mut window);
+        world.draw(&mut window);
+        window.draw(&fps_text);
         window.display()
     }
 }
