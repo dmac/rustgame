@@ -103,7 +103,7 @@ fn start(argc: int, argv: *const *const u8) -> int {
     native::start(argc, argv, main)
 }
 
-fn main () -> () {
+fn main() -> () {
     let mut window = RenderWindow::new(VideoMode::new_init(800, 600, 32),
                                        "SFML Example",
                                        Close,
@@ -159,8 +159,8 @@ fn main () -> () {
             match event {
                 event::KeyPressed{ code: keyboard::Escape, .. } |
                 event::Closed => window.close(),
-                event::KeyPressed{ code: code, .. } => {
-                    // println!("{}", code);
+                event::KeyPressed{ code: _code, .. } => {
+                    // println!("{}", _code);
                 }
                 _ => {}
             }
