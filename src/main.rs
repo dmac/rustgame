@@ -32,31 +32,33 @@ impl<'a> Entity<'a> {
         let aabb = FloatRect::new(self.x, self.y,
                                   self.sprite.get_local_bounds().width,
                                   self.sprite.get_local_bounds().height);
-        for block in world.blocks.iter() {
-            let block_aabb = FloatRect::new(block.x,block.y,
-                                            block.sprite.get_local_bounds().width,
-                                            block.sprite.get_local_bounds().height);
-            if FloatRect::intersects(&aabb, &block_aabb, &FloatRect::new(0.,0.,0.,0.)) {
+        // TODO: This inefficiently iterates through all walls (even empty ones).
+        for (i, &wall) in world.walls.iter().enumerate() {
+            if !wall { continue; }
+            let (wall_x, wall_y) = world.get_xy_from_index(i);
+            let (wall_width, wall_height) = world.get_wall_bounds();
+            let wall_aabb = FloatRect::new(wall_x, wall_y, wall_width, wall_height);
+            if FloatRect::intersects(&aabb, &wall_aabb, &FloatRect::new(0.,0.,0.,0.)) {
                 let mut new_x = self.x as i32;
                 let mut new_y = self.y as i32;
                 match direction {
                     North => {
-                        while new_y < block.y as i32 + block.sprite.get_local_bounds().height as i32 {
+                        while new_y < wall_y as i32 + wall_height as i32 {
                             new_y += 1;
                         }
                     }
                     East => {
-                        while new_x + self.sprite.get_local_bounds().width as i32 > block.x as i32 {
+                        while new_x + self.sprite.get_local_bounds().width as i32 > wall_x as i32 {
                             new_x -= 1;
                         }
                     }
                     South => {
-                        while new_y + self.sprite.get_local_bounds().height as i32 > block.y as i32 {
+                        while new_y + self.sprite.get_local_bounds().height as i32 > wall_y as i32 {
                             new_y -= 1;
                         }
                     }
                     West => {
-                        while new_x < block.x as i32 + block.sprite.get_local_bounds().width as i32 {
+                        while new_x < wall_x as i32 + wall_width as i32 {
                             new_x += 1;
                         }
                     }
@@ -86,14 +88,39 @@ impl<'a> std::fmt::Show for Block<'a> {
 }
 
 struct World<'a> {
-    blocks: Vec<Block<'a>>,
+    walls: Vec<bool>,
+    max_width: uint,
+    max_height: uint,
+    wall_sprite: Sprite<'a>,
 }
 
 impl<'a> World<'a> {
+    fn new(max_width: uint, max_height: uint, wall_sprite: Sprite<'a>) -> World<'a> {
+        World{
+            walls: Vec::from_elem(max_width*max_height, false),
+            max_width: max_width,
+            max_height: max_height,
+            wall_sprite: wall_sprite,
+        }
+    }
+
+    fn get_xy_from_index(&self, i: uint) -> (f32, f32) {
+        let (row, col) = (i / self.max_height, i % self.max_width);
+        let sprite_bounds = self.wall_sprite.get_local_bounds();
+        (col as f32 * sprite_bounds.width, row as f32 * sprite_bounds.height)
+    }
+
+    fn get_wall_bounds(&self) -> (f32, f32) {
+        let bounds = self.wall_sprite.get_local_bounds();
+        (bounds.width, bounds.height)
+    }
+
     fn draw(&mut self, w: &mut RenderWindow) {
-        for block in self.blocks.mut_iter() {
-            block.sprite.set_position2f(block.x, block.y);
-            w.draw(&block.sprite);
+        for (i, &wall) in self.walls.iter().enumerate() {
+            if !wall { continue; }
+            let (x, y) = self.get_xy_from_index(i);
+            self.wall_sprite.set_position2f(x, y);
+            w.draw(&self.wall_sprite);
         }
     }
 }
@@ -125,16 +152,12 @@ fn main() -> () {
         sprite: player_sprite,
     };
 
-    let mut world = World{
-        blocks: Vec::new(),
-    };
+    let mut world = World::new(100, 100, block_sprite);
 
     for i in range(0u, 10) {
-        world.blocks.push(Block{ x: (100 + i*32) as f32, y: 50., sprite: block_sprite.clone() });
-        world.blocks.push(Block{ x: (100 + i*32) as f32, y: 150., sprite: block_sprite.clone() });
+        world.walls.insert(i, true);
+        world.walls.insert(i + 295, true);
     }
-    world.blocks.push(Block{ x: 100., y: 150. + 32., sprite: block_sprite.clone() });
-    world.blocks.push(Block{ x: 100., y: 150. + 64., sprite: block_sprite.clone() });
 
     let mut last_time = time::precise_time_ns();
     let mut fps_last_time = last_time;
