@@ -1,13 +1,16 @@
+use std::io::BufferedReader;
+use std::io::File;
+
 use rsfml::graphics::{RenderWindow, Sprite};
 
-pub enum TileKind {
+enum TileKind {
     Wall,
 }
 
-pub struct Tile {
-    pub row: uint,
-    pub col: uint,
-    pub kind: TileKind,
+struct Tile {
+    row: uint,
+    col: uint,
+    kind: TileKind,
 }
 
 pub struct World<'a> {
@@ -21,6 +24,21 @@ impl<'a> World<'a> {
             tiles: Vec::new(),
             wall_sprite: wall_sprite,
         }
+    }
+
+    pub fn new_from_file(filepath: &str, wall_sprite: Sprite<'a>) -> World<'a> {
+        let path = Path::new(filepath);
+        let mut file = BufferedReader::new(File::open(&path));
+        let mut world = World::new(wall_sprite);
+        for (row, line) in file.lines().enumerate() {
+            for (col, c) in line.unwrap().as_slice().chars().enumerate() {
+                match c {
+                    '-' | '|' => world.tiles.push(Tile{ row: row, col: col, kind: Wall }),
+                    _ => {}
+                }
+            }
+        }
+        world
     }
 
     pub fn get_tile_bounds(&self, tile: Tile) -> (f32, f32, f32, f32) {

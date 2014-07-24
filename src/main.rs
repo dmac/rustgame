@@ -5,7 +5,7 @@ extern crate time;
 use rsfml::window::{ContextSettings, VideoMode, event, keyboard, Close};
 use rsfml::graphics::{RenderWindow, Texture, Sprite, Color, Font, Text, FloatRect};
 
-use world::{World, Tile, Wall};
+use world::{World};
 
 mod world;
 
@@ -103,12 +103,8 @@ fn main() -> () {
         sprite: player_sprite,
     };
 
-    let mut world = World::new(wall_sprite);
-
-    for i in range(0u, 10) {
-        world.tiles.push(Tile{ row: 1, col: i + 5, kind: Wall });
-        world.tiles.push(Tile{ row: 5, col: i + 5, kind: Wall });
-    }
+    // let mut world = World::new(wall_sprite);
+    let mut world = World::new_from_file("resources/worlds/basic.txt", wall_sprite);
 
     let mut last_time = time::precise_time_ns();
     let mut fps_last_time = last_time;
