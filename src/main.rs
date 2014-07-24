@@ -95,7 +95,7 @@ struct World<'a> {
 }
 
 impl<'a> World<'a> {
-    fn new(max_width: uint, max_height: uint, wall_sprite: Sprite<'a>) -> World<'a> {
+    fn new(max_width: uint, max_height: uint, wall_sprite: Sprite) -> World {
         World{
             walls: Vec::from_elem(max_width*max_height, false),
             max_width: max_width,
