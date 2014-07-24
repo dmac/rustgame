@@ -32,33 +32,30 @@ impl<'a> Entity<'a> {
         let aabb = FloatRect::new(self.x, self.y,
                                   self.sprite.get_local_bounds().width,
                                   self.sprite.get_local_bounds().height);
-        // TODO: This inefficiently iterates through all walls (even empty ones).
-        for (i, &wall) in world.walls.iter().enumerate() {
-            if !wall { continue; }
-            let (wall_x, wall_y) = world.get_xy_from_index(i);
-            let (wall_width, wall_height) = world.get_wall_bounds();
-            let wall_aabb = FloatRect::new(wall_x, wall_y, wall_width, wall_height);
-            if FloatRect::intersects(&aabb, &wall_aabb, &FloatRect::new(0.,0.,0.,0.)) {
+        for &tile in world.tiles.iter() {
+            let (tile_x, tile_y, tile_width, tile_height) = world.get_tile_bounds(tile);
+            let tile_aabb = FloatRect::new(tile_x, tile_y, tile_width, tile_height);
+            if FloatRect::intersects(&aabb, &tile_aabb, &FloatRect::new(0.,0.,0.,0.)) {
                 let mut new_x = self.x as i32;
                 let mut new_y = self.y as i32;
                 match direction {
                     North => {
-                        while new_y < wall_y as i32 + wall_height as i32 {
+                        while new_y < tile_y as i32 + tile_height as i32 {
                             new_y += 1;
                         }
                     }
                     East => {
-                        while new_x + self.sprite.get_local_bounds().width as i32 > wall_x as i32 {
+                        while new_x + self.sprite.get_local_bounds().width as i32 > tile_x as i32 {
                             new_x -= 1;
                         }
                     }
                     South => {
-                        while new_y + self.sprite.get_local_bounds().height as i32 > wall_y as i32 {
+                        while new_y + self.sprite.get_local_bounds().height as i32 > tile_y as i32 {
                             new_y -= 1;
                         }
                     }
                     West => {
-                        while new_x < wall_x as i32 + wall_width as i32 {
+                        while new_x < tile_x as i32 + tile_width as i32 {
                             new_x += 1;
                         }
                     }
@@ -75,52 +72,44 @@ impl<'a> Entity<'a> {
     }
 }
 
-struct Block<'a> {
-    x: f32,
-    y: f32,
-    sprite: Sprite<'a>,
+enum TileKind {
+    Wall,
 }
 
-impl<'a> std::fmt::Show for Block<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Block{{ x: {}, y: {}}}", self.x, self.y)
-    }
+struct Tile {
+    row: uint,
+    col: uint,
+    kind: TileKind,
 }
 
 struct World<'a> {
-    walls: Vec<bool>,
-    max_width: uint,
-    max_height: uint,
+    tiles: Vec<Tile>,
     wall_sprite: Sprite<'a>,
 }
 
 impl<'a> World<'a> {
-    fn new(max_width: uint, max_height: uint, wall_sprite: Sprite) -> World {
+    fn new(wall_sprite: Sprite) -> World {
         World{
-            walls: Vec::from_elem(max_width*max_height, false),
-            max_width: max_width,
-            max_height: max_height,
+            tiles: Vec::new(),
             wall_sprite: wall_sprite,
         }
     }
 
-    fn get_xy_from_index(&self, i: uint) -> (f32, f32) {
-        let (row, col) = (i / self.max_height, i % self.max_width);
-        let sprite_bounds = self.wall_sprite.get_local_bounds();
-        (col as f32 * sprite_bounds.width, row as f32 * sprite_bounds.height)
-    }
-
-    fn get_wall_bounds(&self) -> (f32, f32) {
+    fn get_tile_bounds(&self, tile: Tile) -> (f32, f32, f32, f32) {
         let bounds = self.wall_sprite.get_local_bounds();
-        (bounds.width, bounds.height)
+        (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height,
+         bounds.width, bounds.height)
     }
 
     fn draw(&mut self, w: &mut RenderWindow) {
-        for (i, &wall) in self.walls.iter().enumerate() {
-            if !wall { continue; }
-            let (x, y) = self.get_xy_from_index(i);
-            self.wall_sprite.set_position2f(x, y);
-            w.draw(&self.wall_sprite);
+        for &tile in self.tiles.iter() {
+            let (x, y, _, _) = self.get_tile_bounds(tile);
+            match tile.kind {
+                Wall => {
+                    self.wall_sprite.set_position2f(x, y);
+                    w.draw(&self.wall_sprite);
+                }
+            }
         }
     }
 }
@@ -139,9 +128,9 @@ fn main() -> () {
     window.set_framerate_limit(60);
 
     let player_texture = Texture::new_from_file("resources/link.gif").expect("error loading texture");
-    let block_texture = Texture::new_from_file("resources/block.gif").expect("error loading texture");
+    let wall_texture = Texture::new_from_file("resources/block.gif").expect("error loading texture");
     let player_sprite = Sprite::new_with_texture(&player_texture).expect("error creating sprite");
-    let block_sprite = Sprite::new_with_texture(&block_texture).expect("error creating sprite");
+    let wall_sprite = Sprite::new_with_texture(&wall_texture).expect("error creating sprite");
 
     let font = Font::new_from_file("resources/Inconsolata-Regular.ttf").expect("error loading font");
 
@@ -152,11 +141,11 @@ fn main() -> () {
         sprite: player_sprite,
     };
 
-    let mut world = World::new(100, 100, block_sprite);
+    let mut world = World::new(wall_sprite);
 
     for i in range(0u, 10) {
-        world.walls.insert(i, true);
-        world.walls.insert(i + 295, true);
+        world.tiles.push(Tile{ row: 1, col: i + 5, kind: Wall });
+        world.tiles.push(Tile{ row: 5, col: i + 5, kind: Wall });
     }
 
     let mut last_time = time::precise_time_ns();
