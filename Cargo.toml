@@ -1,11 +1,11 @@
 [package]
 
-name = "rustgame2"
+name = "rustgame"
 version = "0.1.0"
 authors = ["dmacdougall@gmail.com"]
 
 [[bin]]
-name = "rustgame2"
+name = "rustgame"
 
 [dependencies.rust-sfml]
 git = "https://github.com/JeremyLetang/rust-sfml"
