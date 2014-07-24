@@ -3,6 +3,13 @@ use std::io::File;
 
 use rsfml::graphics::{RenderWindow, Sprite};
 
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
 #[deriving(Eq, PartialEq, Show)]
 pub enum TileKind {
     Wall,
