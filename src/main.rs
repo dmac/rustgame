@@ -5,6 +5,10 @@ extern crate time;
 use rsfml::window::{ContextSettings, VideoMode, event, keyboard, Close};
 use rsfml::graphics::{RenderWindow, Texture, Sprite, Color, Font, Text, FloatRect};
 
+use world::{World, Tile, Wall};
+
+mod world;
+
 struct Entity<'a> {
     x: f32,
     y: f32,
@@ -69,48 +73,6 @@ impl<'a> Entity<'a> {
     fn draw(&mut self, w: &mut RenderWindow) {
         self.sprite.set_position2f(self.x, self.y);
         w.draw(&self.sprite);
-    }
-}
-
-enum TileKind {
-    Wall,
-}
-
-struct Tile {
-    row: uint,
-    col: uint,
-    kind: TileKind,
-}
-
-struct World<'a> {
-    tiles: Vec<Tile>,
-    wall_sprite: Sprite<'a>,
-}
-
-impl<'a> World<'a> {
-    fn new(wall_sprite: Sprite) -> World {
-        World{
-            tiles: Vec::new(),
-            wall_sprite: wall_sprite,
-        }
-    }
-
-    fn get_tile_bounds(&self, tile: Tile) -> (f32, f32, f32, f32) {
-        let bounds = self.wall_sprite.get_local_bounds();
-        (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height,
-         bounds.width, bounds.height)
-    }
-
-    fn draw(&mut self, w: &mut RenderWindow) {
-        for &tile in self.tiles.iter() {
-            let (x, y, _, _) = self.get_tile_bounds(tile);
-            match tile.kind {
-                Wall => {
-                    self.wall_sprite.set_position2f(x, y);
-                    w.draw(&self.wall_sprite);
-                }
-            }
-        }
     }
 }
 
