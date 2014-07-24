@@ -3,14 +3,17 @@ use std::io::File;
 
 use rsfml::graphics::{RenderWindow, Sprite};
 
-enum TileKind {
+#[deriving(Eq, PartialEq, Show)]
+pub enum TileKind {
     Wall,
+    PlayerStart,
 }
 
+#[deriving(Show)]
 struct Tile {
     row: uint,
     col: uint,
-    kind: TileKind,
+    pub kind: TileKind,
 }
 
 pub struct World<'a> {
@@ -34,6 +37,7 @@ impl<'a> World<'a> {
             for (col, c) in line.unwrap().as_slice().chars().enumerate() {
                 match c {
                     '-' | '|' => world.tiles.push(Tile{ row: row, col: col, kind: Wall }),
+                    '@' => world.tiles.push(Tile{ row: row, col: col, kind: PlayerStart }),
                     _ => {}
                 }
             }
@@ -55,6 +59,7 @@ impl<'a> World<'a> {
                     self.wall_sprite.set_position2f(x, y);
                     w.draw(&self.wall_sprite);
                 }
+                _ => {}
             }
         }
     }

@@ -5,7 +5,7 @@ extern crate time;
 use rsfml::window::{ContextSettings, VideoMode, event, keyboard, Close};
 use rsfml::graphics::{RenderWindow, Texture, Sprite, Color, Font, Text, FloatRect};
 
-use world::{World};
+use world::{World, Wall, PlayerStart};
 
 mod world;
 
@@ -37,6 +37,10 @@ impl<'a> Entity<'a> {
                                   self.sprite.get_local_bounds().width,
                                   self.sprite.get_local_bounds().height);
         for &tile in world.tiles.iter() {
+            match tile.kind {
+                Wall => {},
+                _ => continue,
+            }
             let (tile_x, tile_y, tile_width, tile_height) = world.get_tile_bounds(tile);
             let tile_aabb = FloatRect::new(tile_x, tile_y, tile_width, tile_height);
             if FloatRect::intersects(&aabb, &tile_aabb, &FloatRect::new(0.,0.,0.,0.)) {
@@ -103,8 +107,15 @@ fn main() -> () {
         sprite: player_sprite,
     };
 
-    // let mut world = World::new(wall_sprite);
     let mut world = World::new_from_file("resources/worlds/basic.txt", wall_sprite);
+    match world.tiles.iter().find(|tile| tile.kind == PlayerStart) {
+        Some(&tile) => {
+            let (x, y, _, _) = world.get_tile_bounds(tile);
+            entity.x = x;
+            entity.y = y;
+        }
+        None => {}
+    }
 
     let mut last_time = time::precise_time_ns();
     let mut fps_last_time = last_time;
