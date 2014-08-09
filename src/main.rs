@@ -5,10 +5,12 @@ extern crate time;
 use rsfml::window::{ContextSettings, VideoMode, event, keyboard, Close};
 use rsfml::graphics::{RenderWindow, Texture, Sprite, Color, Font, Text};
 
-use entity::{Entity};
+use components::{Mobile, Draw};
+use player::{Player};
 use world::{World, PlayerStart, North, East, South, West};
 
-mod entity;
+mod components;
+mod player;
 mod world;
 
 #[start]
@@ -39,7 +41,7 @@ fn main() -> () {
         }
         None => (0., 0.)
     };
-    let mut player = Entity::new(startx, starty, 200., player_sprite);
+    let mut player = Player::new(startx, starty, 200., player_sprite);
 
     let mut last_time = time::precise_time_ns();
     let mut fps_last_time = last_time;

@@ -1,20 +1,32 @@
 use rsfml::graphics::{RenderWindow, Sprite, FloatRect};
 
+use components::{Entity, Draw, Mobile};
 use world::{World, Direction, North, East, South, West, Wall};
 
-pub struct Entity<'a> {
+pub struct Player<'a> {
     x: f32,
     y: f32,
     speed: f32, // pixels per second
     sprite: Sprite<'a>,
 }
 
-impl<'a> Entity<'a> {
-    pub fn new(x: f32, y: f32, speed: f32, sprite: Sprite<'a>) -> Entity {
-        Entity{x: x, y: y, speed: speed, sprite: sprite}
+impl<'a> Player<'a> {
+    pub fn new(x: f32, y: f32, speed: f32, sprite: Sprite<'a>) -> Player {
+        Player{x: x, y: y, speed: speed, sprite: sprite}
     }
+}
 
-    pub fn move(&mut self, direction: Direction, dt: u64, world: &World) {
+impl<'a> Entity for Player<'a> {}
+
+impl<'a> Draw for Player<'a> {
+    fn draw(&mut self, w: &mut RenderWindow) {
+        self.sprite.set_position2f(self.x, self.y);
+        w.draw(&self.sprite);
+    }
+}
+
+impl<'a> Mobile for Player<'a> {
+    fn move(&mut self, direction: Direction, dt: u64, world: &World) {
         let distance = self.speed * dt as f32 / 1000000000.;
         match direction {
             North => self.y -= distance,
@@ -63,10 +75,5 @@ impl<'a> Entity<'a> {
                 self.y = new_y as f32;
             }
         }
-    }
-
-    pub fn draw(&mut self, w: &mut RenderWindow) {
-        self.sprite.set_position2f(self.x, self.y);
-        w.draw(&self.sprite);
     }
 }
