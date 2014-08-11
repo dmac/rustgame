@@ -17,6 +17,7 @@ pub enum Direction {
 pub enum TileKind {
     Wall,
     PlayerStart,
+    MoblinStart,
 }
 
 #[deriving(Show)]
@@ -48,6 +49,7 @@ impl<'a> World<'a> {
                 match c {
                     '-' | '|' => world.tiles.push(Tile{ row: row, col: col, kind: Wall }),
                     '@' => world.tiles.push(Tile{ row: row, col: col, kind: PlayerStart }),
+                    'm' => world.tiles.push(Tile{ row: row, col: col, kind: MoblinStart }),
                     _ => {}
                 }
             }
