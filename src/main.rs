@@ -8,11 +8,13 @@ use rsfml::graphics::{RenderWindow, Texture, Sprite, Color, Font, Text};
 use components::{Mobile, Draw};
 use moblin::{Moblin};
 use player::{Player};
+use sword::{Sword};
 use world::{World, PlayerStart, MoblinStart, North, East, South, West};
 
 mod components;
 mod moblin;
 mod player;
+mod sword;
 mod util;
 mod world;
 
@@ -32,9 +34,11 @@ fn main() -> () {
     let player_texture = Texture::new_from_file("resources/link.gif").expect("error loading texture");
     let moblin_texture = Texture::new_from_file("resources/moblin.gif").expect("error loading texture");
     let wall_texture = Texture::new_from_file("resources/block.gif").expect("error loading texture");
+    let sword_texture = Texture::new_from_file("resources/sword.gif").expect("error loading texture");
     let player_sprite = Sprite::new_with_texture(&player_texture).expect("error creating sprite");
     let moblin_sprite = Sprite::new_with_texture(&moblin_texture).expect("error creating sprite");
     let wall_sprite = Sprite::new_with_texture(&wall_texture).expect("error creating sprite");
+    let sword_sprite = Sprite::new_with_texture(&sword_texture).expect("error creating sprite");
 
     let font = Font::new_from_file("resources/Inconsolata-Regular.ttf").expect("error loading font");
 
@@ -48,6 +52,9 @@ fn main() -> () {
         None => (0., 0.)
     };
     let mut player = Player::new(startx, starty, 200., player_sprite);
+
+    let sword = box Sword::new(0., 0., sword_sprite);
+    player.set_active_item(sword);
 
     // TODO: world should have a list of entities (including player)
     let (mstartx, mstarty) = match world.tiles.iter().find(|tile| tile.kind == MoblinStart) {
@@ -84,14 +91,21 @@ fn main() -> () {
             match event {
                 event::KeyPressed{ code: keyboard::Escape, .. } |
                 event::Closed => window.close(),
+                event::KeyPressed{ code: keyboard::Space, .. } => {
+                    player.set_active_item_state(true);
+                }
+                event::KeyReleased{ code: keyboard::Space, .. } => {
+                    player.set_active_item_state(false);
+                }
                 event::KeyPressed{ code: _code, .. } => {
-                    // println!("{}", _code);
+                    //println!("{}", _code);
                 }
                 _ => {}
             }
         }
 
         // Tick entities
+        player.tick(dt, &world);
         moblin.tick(dt, &world);
 
         // Draw

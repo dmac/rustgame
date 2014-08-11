@@ -25,3 +25,9 @@ pub trait Bounded : Entity {
         self.set_bounds(x, y, width, height);
     }
 }
+
+pub trait Item : Entity {
+    fn activate(&mut self);
+    fn deactivate(&mut self);
+    fn tick(&mut self, dt: u64, world: &World);
+}
