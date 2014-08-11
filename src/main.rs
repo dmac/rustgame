@@ -11,6 +11,7 @@ use world::{World, PlayerStart, North, East, South, West};
 
 mod components;
 mod player;
+mod util;
 mod world;
 
 #[start]

@@ -1,7 +1,7 @@
-use rsfml::graphics::{RenderWindow, Sprite, FloatRect};
+use rsfml::graphics::{RenderWindow, Sprite};
 
-use components::{Entity, Draw, Mobile};
-use world::{World, Direction, North, East, South, West, Wall};
+use components::{Entity, Draw, Mobile, Bounded};
+use world::{World, Direction, North, East, South, West};
 
 pub struct Player<'a> {
     x: f32,
@@ -25,9 +25,21 @@ impl<'a> Draw for Player<'a> {
     }
 }
 
+impl<'a> Bounded for Player<'a> {
+    fn get_bounds(&self) -> (f32, f32, f32, f32) {
+        let local_bounds = self.sprite.get_local_bounds();
+        (self.x, self.y, local_bounds.width, local_bounds.height)
+    }
+
+    fn set_bounds(&mut self, x: f32, y: f32, _: f32, _: f32) {
+        self.x = x;
+        self.y = y;
+    }
+}
+
 impl<'a> Mobile for Player<'a> {
     fn move(&mut self, direction: Direction, dt: u64, world: &World) {
-        let distance = self.speed * dt as f32 / 1000000000.;
+        let distance = self.speed * dt as f32 / (1e9 as f32);
         match direction {
             North => self.y -= distance,
             East => self.x += distance,
@@ -35,45 +47,6 @@ impl<'a> Mobile for Player<'a> {
             West => self.x -= distance,
         }
 
-        let aabb = FloatRect::new(self.x, self.y,
-                                  self.sprite.get_local_bounds().width,
-                                  self.sprite.get_local_bounds().height);
-        for &tile in world.tiles.iter() {
-            let passable = match tile.kind {
-                Wall => false,
-                _ => true,
-            };
-            if passable { continue }
-            let (tile_x, tile_y, tile_width, tile_height) = world.get_tile_bounds(tile);
-            let tile_aabb = FloatRect::new(tile_x, tile_y, tile_width, tile_height);
-            if FloatRect::intersects(&aabb, &tile_aabb, &FloatRect::new(0.,0.,0.,0.)) {
-                let mut new_x = self.x as i32;
-                let mut new_y = self.y as i32;
-                match direction {
-                    North => {
-                        while new_y < tile_y as i32 + tile_height as i32 {
-                            new_y += 1;
-                        }
-                    }
-                    East => {
-                        while new_x + self.sprite.get_local_bounds().width as i32 > tile_x as i32 {
-                            new_x -= 1;
-                        }
-                    }
-                    South => {
-                        while new_y + self.sprite.get_local_bounds().height as i32 > tile_y as i32 {
-                            new_y -= 1;
-                        }
-                    }
-                    West => {
-                        while new_x < tile_x as i32 + tile_width as i32 {
-                            new_x += 1;
-                        }
-                    }
-                }
-                self.x = new_x as f32;
-                self.y = new_y as f32;
-            }
-        }
+        world.collide_entity_with_tiles(self, direction);
     }
 }

@@ -1,7 +1,10 @@
 use std::io::BufferedReader;
 use std::io::File;
 
-use rsfml::graphics::{RenderWindow, Sprite};
+use rsfml::graphics::{RenderWindow, Sprite, FloatRect};
+
+use components::{Bounded};
+use util;
 
 pub enum Direction {
     North,
@@ -67,6 +70,28 @@ impl<'a> World<'a> {
                     w.draw(&self.wall_sprite);
                 }
                 _ => {}
+            }
+        }
+    }
+
+    pub fn collide_entity_with_tiles<T: Bounded>(&self, entity: &mut T, direction: Direction) {
+        let (entity_x, entity_y, entity_width, entity_height) = entity.get_bounds();
+        let entity_aabb = FloatRect::new(entity_x, entity_y, entity_width, entity_height);
+
+        for &tile in self.tiles.iter() {
+            let passable = match tile.kind {
+                Wall => false,
+                _ => true,
+            };
+            if passable { continue }
+            let (tile_x, tile_y, tile_width, tile_height) = self.get_tile_bounds(tile);
+            let tile_aabb = FloatRect::new(tile_x, tile_y, tile_width, tile_height);
+            match util::collide_rects(&entity_aabb, &tile_aabb, direction) {
+                Some((new_x, new_y)) => {
+                    entity.set_x(new_x);
+                    entity.set_y(new_y);
+                }
+                None => {}
             }
         }
     }
