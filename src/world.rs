@@ -3,6 +3,7 @@ use std::io::File;
 
 use rsfml::graphics::{RenderWindow, Sprite, FloatRect};
 
+use assets::Assets;
 use components::{Bounded};
 use util;
 
@@ -33,17 +34,18 @@ pub struct World<'a> {
 }
 
 impl<'a> World<'a> {
-    pub fn new(wall_sprite: Sprite) -> World {
+    pub fn new(assets: &Assets) -> World {
+        let wall_sprite = Sprite::new_with_texture(assets.get_texture("wall")).unwrap();
         World{
             tiles: Vec::new(),
             wall_sprite: wall_sprite,
         }
     }
 
-    pub fn new_from_file(filepath: &str, wall_sprite: Sprite<'a>) -> World<'a> {
+    pub fn new_from_file(filepath: &str, assets: &'a Assets) -> World<'a> {
         let path = Path::new(filepath);
         let mut file = BufferedReader::new(File::open(&path));
-        let mut world = World::new(wall_sprite);
+        let mut world = World::new(assets);
         for (row, line) in file.lines().enumerate() {
             for (col, c) in line.unwrap().as_slice().chars().enumerate() {
                 match c {

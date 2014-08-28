@@ -1,5 +1,6 @@
 use rsfml::graphics::{RenderWindow, Sprite};
 
+use assets::Assets;
 use components::{Entity, Draw, Mobile, Bounded};
 use world::{World, Direction, North, East, South, West};
 
@@ -11,7 +12,8 @@ pub struct Moblin<'a> {
 }
 
 impl<'a> Moblin<'a>{
-    pub fn new(x: f32, y: f32, sprite: Sprite) -> Moblin {
+    pub fn new(x: f32, y: f32, assets: &Assets) -> Moblin {
+        let sprite = Sprite::new_with_texture(assets.get_texture("moblin")).unwrap();
         Moblin{x: x, y: y, speed: 50., sprite: sprite}
     }
 

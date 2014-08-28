@@ -1,5 +1,6 @@
 use rsfml::graphics::{RenderWindow, Sprite};
 
+use assets::Assets;
 use components::{Entity, Draw, Mobile, Bounded, Item};
 use world::{World, Direction, North, East, South, West};
 
@@ -12,7 +13,8 @@ pub struct Player<'a, T> {
 }
 
 impl<'a, T: Item + Bounded> Player<'a, T> {
-    pub fn new(x: f32, y: f32, speed: f32, sprite: Sprite<'a>) -> Player<T> {
+    pub fn new(x: f32, y: f32, speed: f32, assets: &Assets) -> Player<T> {
+        let sprite = Sprite::new_with_texture(assets.get_texture("player")).unwrap();
         Player{x: x, y: y, speed: speed, sprite: sprite, active_item: None}
     }
 

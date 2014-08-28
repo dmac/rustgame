@@ -3,8 +3,9 @@ extern crate rsfml;
 extern crate time;
 
 use rsfml::window::{ContextSettings, VideoMode, event, keyboard, Close};
-use rsfml::graphics::{RenderWindow, Texture, Sprite, Color, Font, Text};
+use rsfml::graphics::{RenderWindow, Color, Text};
 
+use assets::Assets;
 use components::{Mobile, Draw};
 use moblin::{Moblin};
 use player::{Player};
@@ -12,6 +13,7 @@ use sword::{Sword};
 use world::{World, PlayerStart, MoblinStart, North, East, South, West};
 
 mod components;
+mod assets;
 mod moblin;
 mod player;
 mod sword;
@@ -31,18 +33,9 @@ fn main() -> () {
         .expect("error creating window");
     window.set_framerate_limit(60);
 
-    let player_texture = Texture::new_from_file("resources/link.gif").expect("error loading texture");
-    let moblin_texture = Texture::new_from_file("resources/moblin.gif").expect("error loading texture");
-    let wall_texture = Texture::new_from_file("resources/block.gif").expect("error loading texture");
-    let sword_texture = Texture::new_from_file("resources/sword.gif").expect("error loading texture");
-    let player_sprite = Sprite::new_with_texture(&player_texture).expect("error creating sprite");
-    let moblin_sprite = Sprite::new_with_texture(&moblin_texture).expect("error creating sprite");
-    let wall_sprite = Sprite::new_with_texture(&wall_texture).expect("error creating sprite");
-    let sword_sprite = Sprite::new_with_texture(&sword_texture).expect("error creating sprite");
+    let assets = Assets::new();
 
-    let font = Font::new_from_file("resources/Inconsolata-Regular.ttf").expect("error loading font");
-
-    let mut world = World::new_from_file("resources/worlds/basic.txt", wall_sprite);
+    let mut world = World::new_from_file("resources/worlds/basic.txt", &assets);
 
     let (startx, starty) = match world.tiles.iter().find(|tile| tile.kind == PlayerStart) {
         Some(&tile) => {
@@ -51,9 +44,9 @@ fn main() -> () {
         }
         None => (0., 0.)
     };
-    let mut player = Player::new(startx, starty, 200., player_sprite);
+    let mut player = Player::new(startx, starty, 200., &assets);
 
-    let sword = box Sword::new(0., 0., sword_sprite);
+    let sword = box Sword::new(0., 0., &assets);
     player.set_active_item(sword);
 
     // TODO: world should have a list of entities (including player)
@@ -64,12 +57,12 @@ fn main() -> () {
         }
         None => (0., 0.)
     };
-    let mut moblin = Moblin::new(mstartx, mstarty, moblin_sprite);
+    let mut moblin = Moblin::new(mstartx, mstarty, &assets);
 
     let mut last_time = time::precise_time_ns();
     let mut fps_last_time = last_time;
     let mut fps_count = 0u;
-    let mut fps_text = Text::new_init("", &font, 48).expect("error creating text");
+    let mut fps_text = Text::new_init("", assets.get_font(), 48).expect("error creating text");
     while window.is_open() {
         // Count frames and dt
         fps_count += 1;

@@ -1,5 +1,6 @@
 use rsfml::graphics::{Sprite, RenderWindow};
 
+use assets::Assets;
 use components::{Entity, Bounded, Draw, Item};
 use world::{World};
 
@@ -11,7 +12,8 @@ pub struct Sword<'a> {
 }
 
 impl<'a> Sword<'a> {
-    pub fn new(x: f32, y: f32, sprite: Sprite<'a>) -> Sword {
+    pub fn new(x: f32, y: f32, assets: &Assets) -> Sword {
+        let sprite = Sprite::new_with_texture(assets.get_texture("sword")).unwrap();
         Sword{x: x, y: y, sprite: sprite, active: false}
     }
 }
@@ -48,7 +50,7 @@ impl<'a> Item for Sword<'a> {
         self.active = false;
     }
 
-    fn tick(&mut self, dt: u64, world: &World) {
+    fn tick(&mut self, _dt: u64, _world: &World) {
         // TODO: check for damage
     }
 }
