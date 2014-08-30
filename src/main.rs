@@ -7,10 +7,8 @@ use rsfml::graphics::{RenderWindow, Color, Text};
 
 use assets::Assets;
 use components::{Mobile, Draw};
-use moblin::{Moblin};
-use player::{Player};
-use sword::{Sword};
-use world::{World, PlayerStart, MoblinStart, North, East, South, West};
+use sword::Sword;
+use world::{World, North, East, South, West};
 
 mod components;
 mod assets;
@@ -37,27 +35,8 @@ fn main() -> () {
 
     let mut world = World::new_from_file("resources/worlds/basic.txt", &assets);
 
-    let (startx, starty) = match world.tiles.iter().find(|tile| tile.kind == PlayerStart) {
-        Some(&tile) => {
-            let (x, y, _, _) = world.get_tile_bounds(tile);
-            (x, y)
-        }
-        None => (0., 0.)
-    };
-    let mut player = Player::new(startx, starty, 200., &assets);
-
     let sword = box Sword::new(0., 0., &assets);
-    player.set_active_item(sword);
-
-    // TODO: world should have a list of entities (including player)
-    let (mstartx, mstarty) = match world.tiles.iter().find(|tile| tile.kind == MoblinStart) {
-        Some(&tile) => {
-            let (x, y, _, _) = world.get_tile_bounds(tile);
-            (x, y)
-        }
-        None => (0., 0.)
-    };
-    let mut moblin = Moblin::new(mstartx, mstarty, &assets);
+    world.player.borrow_mut().set_active_item(sword);
 
     let mut last_time = time::precise_time_ns();
     let mut fps_last_time = last_time;
@@ -76,19 +55,19 @@ fn main() -> () {
         }
 
         // Handle input
-        if keyboard::is_key_pressed(keyboard::W) { player.move(North, dt, &world) }
-        if keyboard::is_key_pressed(keyboard::D) { player.move(East, dt, &world) }
-        if keyboard::is_key_pressed(keyboard::S) { player.move(South, dt, &world) }
-        if keyboard::is_key_pressed(keyboard::A) { player.move(West, dt, &world) }
+        if keyboard::is_key_pressed(keyboard::W) { world.player.borrow_mut().move(North, dt, &world) }
+        if keyboard::is_key_pressed(keyboard::D) { world.player.borrow_mut().move(East, dt, &world) }
+        if keyboard::is_key_pressed(keyboard::S) { world.player.borrow_mut().move(South, dt, &world) }
+        if keyboard::is_key_pressed(keyboard::A) { world.player.borrow_mut().move(West, dt, &world) }
         for event in window.events() {
             match event {
                 event::KeyPressed{ code: keyboard::Escape, .. } |
                 event::Closed => window.close(),
                 event::KeyPressed{ code: keyboard::Space, .. } => {
-                    player.set_active_item_state(true);
+                    world.player.borrow_mut().set_active_item_state(true);
                 }
                 event::KeyReleased{ code: keyboard::Space, .. } => {
-                    player.set_active_item_state(false);
+                    world.player.borrow_mut().set_active_item_state(false);
                 }
                 event::KeyPressed{ code: _code, .. } => {
                     //println!("{}", _code);
@@ -98,13 +77,13 @@ fn main() -> () {
         }
 
         // Tick entities
-        player.tick(dt, &world);
-        moblin.tick(dt, &world);
+        world.player.borrow_mut().tick(dt, &world);
+        world.moblin.borrow_mut().tick(dt, &world);
 
         // Draw
         window.clear(&Color::new_RGB(50, 50, 50));
-        player.draw(&mut window);
-        moblin.draw(&mut window);
+        world.player.borrow_mut().draw(&mut window);
+        world.moblin.borrow_mut().draw(&mut window);
         world.draw(&mut window);
         window.draw(&fps_text);
         window.display()

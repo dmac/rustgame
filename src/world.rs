@@ -1,10 +1,13 @@
+use std::cell::RefCell;
 use std::io::BufferedReader;
 use std::io::File;
 
 use rsfml::graphics::{RenderWindow, Sprite, FloatRect};
 
 use assets::Assets;
-use components::{Bounded};
+use components::Bounded;
+use player::Player;
+use moblin::Moblin;
 use util;
 
 pub enum Direction {
@@ -29,34 +32,54 @@ struct Tile {
 }
 
 pub struct World<'a> {
+    pub player: RefCell<Player<'a>>,
+    pub moblin: RefCell<Moblin<'a>>,
     pub tiles: Vec<Tile>,
     wall_sprite: Sprite<'a>,
 }
 
 impl<'a> World<'a> {
-    pub fn new(assets: &Assets) -> World {
-        let wall_sprite = Sprite::new_with_texture(assets.get_texture("wall")).unwrap();
-        World{
-            tiles: Vec::new(),
-            wall_sprite: wall_sprite,
-        }
-    }
-
     pub fn new_from_file(filepath: &str, assets: &'a Assets) -> World<'a> {
+        let wall_sprite = Sprite::new_with_texture(assets.get_texture("wall")).unwrap();
+        let mut tiles = Vec::new();
+        let player = RefCell::new(Player::new(0., 0., 200., assets));
+        let moblin = RefCell::new(Moblin::new(0., 0., assets));
         let path = Path::new(filepath);
         let mut file = BufferedReader::new(File::open(&path));
-        let mut world = World::new(assets);
         for (row, line) in file.lines().enumerate() {
             for (col, c) in line.unwrap().as_slice().chars().enumerate() {
                 match c {
-                    '-' | '|' => world.tiles.push(Tile{ row: row, col: col, kind: Wall }),
-                    '@' => world.tiles.push(Tile{ row: row, col: col, kind: PlayerStart }),
-                    'm' => world.tiles.push(Tile{ row: row, col: col, kind: MoblinStart }),
+                    '-' | '|' => tiles.push(Tile{ row: row, col: col, kind: Wall }),
+                    '@' => tiles.push(Tile{ row: row, col: col, kind: PlayerStart }),
+                    'm' => tiles.push(Tile{ row: row, col: col, kind: MoblinStart }),
                     _ => {}
                 }
             }
         }
-        world
+        match tiles.iter().find(|tile| tile.kind == PlayerStart) {
+            Some(tile) => {
+                let bounds = wall_sprite.get_local_bounds();
+                let (x, y) = (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height);
+                player.borrow_mut().set_x(x);
+                player.borrow_mut().set_y(y);
+            }
+            None => {}
+        }
+        match tiles.iter().find(|tile| tile.kind == MoblinStart) {
+            Some(tile) => {
+                let bounds = wall_sprite.get_local_bounds();
+                let (x, y) = (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height);
+                moblin.borrow_mut().set_x(x);
+                moblin.borrow_mut().set_y(y);
+            }
+            None => {}
+        }
+        World{
+            player: player,
+            moblin: moblin,
+            tiles: tiles,
+            wall_sprite: wall_sprite,
+        }
     }
 
     pub fn get_tile_bounds(&self, tile: Tile) -> (f32, f32, f32, f32) {
