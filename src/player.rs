@@ -4,21 +4,21 @@ use assets::Assets;
 use components::{Entity, Draw, Mobile, Bounded, Item};
 use world::{World, Direction, North, East, South, West};
 
-pub struct Player<'a, T> {
+pub struct Player<'a> {
     x: f32,
     y: f32,
     speed: f32, // pixels per second
     sprite: Sprite<'a>,
-    active_item: Option<Box<T>>,
+    active_item: Option<Box<Item>>,
 }
 
-impl<'a, T: Item + Bounded> Player<'a, T> {
-    pub fn new(x: f32, y: f32, speed: f32, assets: &Assets) -> Player<T> {
+impl<'a> Player<'a> {
+    pub fn new(x: f32, y: f32, speed: f32, assets: &Assets) -> Player {
         let sprite = Sprite::new_with_texture(assets.get_texture("player")).unwrap();
         Player{x: x, y: y, speed: speed, sprite: sprite, active_item: None}
     }
 
-    pub fn set_active_item(&mut self, item: Box<T>) {
+    pub fn set_active_item(&mut self, item: Box<Item>) {
         self.active_item = Some(item);
     }
 
@@ -43,9 +43,9 @@ impl<'a, T: Item + Bounded> Player<'a, T> {
     }
 }
 
-impl<'a, T> Entity for Player<'a, T> {}
+impl<'a> Entity for Player<'a> {}
 
-impl<'a, T: Bounded + Draw> Draw for Player<'a, T> {
+impl<'a> Draw for Player<'a> {
     fn draw(&mut self, w: &mut RenderWindow) {
         self.sprite.set_position2f(self.x, self.y);
         w.draw(&self.sprite);
@@ -61,7 +61,7 @@ impl<'a, T: Bounded + Draw> Draw for Player<'a, T> {
     }
 }
 
-impl<'a, T> Bounded for Player<'a, T> {
+impl<'a> Bounded for Player<'a> {
     fn get_bounds(&self) -> (f32, f32, f32, f32) {
         let local_bounds = self.sprite.get_local_bounds();
         (self.x, self.y, local_bounds.width, local_bounds.height)
@@ -73,7 +73,7 @@ impl<'a, T> Bounded for Player<'a, T> {
     }
 }
 
-impl<'a, T> Mobile for Player<'a, T> {
+impl<'a> Mobile for Player<'a> {
     fn move(&mut self, direction: Direction, dt: u64, world: &World) {
         let distance = self.speed * dt as f32 / (1e9 as f32);
         match direction {

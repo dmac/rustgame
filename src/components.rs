@@ -26,7 +26,7 @@ pub trait Bounded : Entity {
     }
 }
 
-pub trait Item : Entity {
+pub trait Item : Entity + Bounded + Draw {
     fn activate(&mut self);
     fn deactivate(&mut self);
     fn tick(&mut self, dt: u64, world: &World);
