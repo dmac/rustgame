@@ -1,4 +1,4 @@
-use rsfml::graphics::{Sprite, RenderWindow};
+use rsfml::graphics::{Sprite, RenderWindow, FloatRect};
 
 use assets::Assets;
 use components::{Entity, Bounded, Draw, Item};
@@ -8,13 +8,20 @@ pub struct Sword<'a> {
     x: f32,
     y: f32,
     active: bool,
+    damage: i32,
     sprite: Sprite<'a>,
 }
 
 impl<'a> Sword<'a> {
     pub fn new(x: f32, y: f32, assets: &Assets) -> Sword {
         let sprite = Sprite::new_with_texture(assets.get_texture("sword")).unwrap();
-        Sword{x: x, y: y, sprite: sprite, active: false}
+        Sword{
+            x: x,
+            y: y,
+            damage: 10,
+            sprite: sprite,
+            active: false
+        }
     }
 }
 
@@ -50,7 +57,20 @@ impl<'a> Item for Sword<'a> {
         self.active = false;
     }
 
-    fn tick(&mut self, _dt: u64, _world: &World) {
-        // TODO: check for damage
+    fn tick(&mut self, _dt: u64, world: &World) {
+        if !self.active {
+            return;
+        }
+        for (i, enemy) in world.enemies.borrow().iter().enumerate() {
+            let (x, y, w, h) = self.get_bounds();
+            let srect = FloatRect::new(x, y, w, h);
+            let (x, y, w, h) = enemy.borrow().get_bounds();
+            let mrect = FloatRect::new(x, y, w, h);
+            let intersects = FloatRect::intersects(&srect, &mrect, &FloatRect::new(0.,0.,0.,0.));
+            if !intersects {
+                continue;
+            }
+            enemy.borrow_mut().damage(self.damage);
+        }
     }
 }

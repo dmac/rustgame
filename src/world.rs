@@ -33,7 +33,7 @@ struct Tile {
 
 pub struct World<'a> {
     pub player: RefCell<Player<'a>>,
-    pub moblin: RefCell<Moblin<'a>>,
+    pub enemies: RefCell<Vec<RefCell<Moblin<'a>>>>,
     pub tiles: Vec<Tile>,
     wall_sprite: Sprite<'a>,
 }
@@ -76,7 +76,7 @@ impl<'a> World<'a> {
         }
         World{
             player: player,
-            moblin: moblin,
+            enemies: RefCell::new(vec![moblin]),
             tiles: tiles,
             wall_sprite: wall_sprite,
         }
@@ -90,12 +90,27 @@ impl<'a> World<'a> {
 
     pub fn tick(&self, dt: u64) {
         self.player.borrow_mut().tick(dt, self);
-        self.moblin.borrow_mut().tick(dt, self);
+        for enemy in self.enemies.borrow().iter() {
+            enemy.borrow_mut().tick(dt, self);
+        }
+
+        // Sweep and clear dead enemies
+        let mut i = 0u;
+        while i < self.enemies.borrow().len() {
+            let mut enemies = self.enemies.borrow_mut();
+            if enemies.deref()[i].borrow().health <= 0 {
+                enemies.remove(i);
+            } else {
+                i += 1;
+            }
+        }
     }
 
     pub fn draw(&mut self, w: &mut RenderWindow) {
         self.player.borrow_mut().draw(w);
-        self.moblin.borrow_mut().draw(w);
+        for enemy in self.enemies.borrow().iter() {
+            enemy.borrow_mut().draw(w);
+        }
         for &tile in self.tiles.iter() {
             let (x, y, _, _) = self.get_tile_bounds(tile);
             match tile.kind {

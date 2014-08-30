@@ -8,17 +8,31 @@ pub struct Moblin<'a> {
     x: f32,
     y: f32,
     speed: f32,
+    pub health: i32,
+    max_health: i32,
     sprite: Sprite<'a>,
 }
 
 impl<'a> Moblin<'a>{
     pub fn new(x: f32, y: f32, assets: &Assets) -> Moblin {
         let sprite = Sprite::new_with_texture(assets.get_texture("moblin")).unwrap();
-        Moblin{x: x, y: y, speed: 50., sprite: sprite}
+        Moblin{
+            x: x,
+            y: y,
+            speed: 50.,
+            health: 100,
+            max_health: 100,
+            sprite: sprite
+        }
     }
 
     pub fn tick(&mut self, dt: u64, world: &World) {
         self.move(South, dt, world);
+    }
+
+    pub fn damage(&mut self, amount: i32) {
+        self.health -= amount;
+        println!("Moblin Health: {}/{}", self.health, self.max_health);
     }
 }
 
