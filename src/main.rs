@@ -76,14 +76,9 @@ fn main() -> () {
             }
         }
 
-        // Tick entities
-        world.player.borrow_mut().tick(dt, &world);
-        world.moblin.borrow_mut().tick(dt, &world);
+        world.tick(dt);
 
-        // Draw
         window.clear(&Color::new_RGB(50, 50, 50));
-        world.player.borrow_mut().draw(&mut window);
-        world.moblin.borrow_mut().draw(&mut window);
         world.draw(&mut window);
         window.draw(&fps_text);
         window.display()

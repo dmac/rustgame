@@ -5,7 +5,7 @@ use std::io::File;
 use rsfml::graphics::{RenderWindow, Sprite, FloatRect};
 
 use assets::Assets;
-use components::Bounded;
+use components::{Bounded, Draw};
 use player::Player;
 use moblin::Moblin;
 use util;
@@ -88,7 +88,14 @@ impl<'a> World<'a> {
          bounds.width, bounds.height)
     }
 
+    pub fn tick(&self, dt: u64) {
+        self.player.borrow_mut().tick(dt, self);
+        self.moblin.borrow_mut().tick(dt, self);
+    }
+
     pub fn draw(&mut self, w: &mut RenderWindow) {
+        self.player.borrow_mut().draw(w);
+        self.moblin.borrow_mut().draw(w);
         for &tile in self.tiles.iter() {
             let (x, y, _, _) = self.get_tile_bounds(tile);
             match tile.kind {
