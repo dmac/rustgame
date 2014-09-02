@@ -61,7 +61,7 @@ impl<'a> Item for Sword<'a> {
         if !self.active {
             return;
         }
-        for (i, enemy) in world.enemies.borrow().iter().enumerate() {
+        for enemy in world.enemies.borrow().iter() {
             let (x, y, w, h) = self.get_bounds();
             let srect = FloatRect::new(x, y, w, h);
             let (x, y, w, h) = enemy.borrow().get_bounds();
