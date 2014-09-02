@@ -18,7 +18,7 @@ pub enum Direction {
 }
 
 #[deriving(Eq, PartialEq, Show)]
-pub enum TileKind {
+enum TileKind {
     Wall,
     PlayerStart,
     MoblinStart,
@@ -28,13 +28,13 @@ pub enum TileKind {
 struct Tile {
     row: uint,
     col: uint,
-    pub kind: TileKind,
+    kind: TileKind,
 }
 
 pub struct World<'a> {
     pub player: RefCell<Player<'a>>,
     pub enemies: RefCell<Vec<RefCell<Moblin<'a>>>>,
-    pub tiles: Vec<Tile>,
+    tiles: Vec<Tile>,
     wall_sprite: Sprite<'a>,
 }
 
@@ -82,7 +82,7 @@ impl<'a> World<'a> {
         }
     }
 
-    pub fn get_tile_bounds(&self, tile: Tile) -> (f32, f32, f32, f32) {
+    fn get_tile_bounds(&self, tile: Tile) -> (f32, f32, f32, f32) {
         let bounds = self.wall_sprite.get_local_bounds();
         (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height,
          bounds.width, bounds.height)
