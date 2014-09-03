@@ -7,7 +7,7 @@ pub struct Assets {
 
 struct Textures {
     pub player: Texture,
-    pub moblin: Texture,
+    pub enemy: Texture,
     pub wall: Texture,
     pub sword: Texture,
 }
@@ -21,7 +21,7 @@ impl Assets {
             textures:
             Textures{
                 player: Assets::ss_texture(&ss, 0, 0, 1, 1),
-                moblin: Assets::ss_texture(&ss, 1, 0, 1, 1),
+                enemy: Assets::ss_texture(&ss, 1, 0, 1, 1),
                 wall: Assets::ss_texture(&ss, 3, 0, 1, 1),
                 sword: Assets::ss_texture(&ss, 2, 0, 1, 1),
             },

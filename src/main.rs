@@ -12,7 +12,7 @@ use world::{World, North, East, South, West};
 
 mod components;
 mod assets;
-mod moblin;
+mod enemies;
 mod player;
 mod sword;
 mod util;

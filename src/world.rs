@@ -8,7 +8,7 @@ use rsfml::graphics::{RenderWindow, Sprite, FloatRect};
 use assets::Assets;
 use components::{Bounded, Draw};
 use player::Player;
-use moblin::Moblin;
+use enemies::Enemy;
 use util;
 
 pub enum Direction {
@@ -23,7 +23,7 @@ enum TileKind {
     Empty,
     Wall,
     PlayerStart,
-    MoblinStart,
+    EnemyStart,
 }
 
 #[deriving(Show, Clone)]
@@ -35,7 +35,7 @@ pub struct Tile {
 
 pub struct World<'a> {
     pub player: RefCell<Player<'a>>,
-    pub enemies: RefCell<Vec<RefCell<Moblin<'a>>>>,
+    pub enemies: RefCell<Vec<RefCell<Enemy<'a>>>>,
     tiles: Vec<Rc<RefCell<Tile>>>,
     wall_sprite: Sprite<'a>,
 }
@@ -61,12 +61,12 @@ impl<'a> World<'a> {
                         Some(tile)
                     },
                     'm' => {
-                        let tile = Tile{ row: row, col: col, kind: MoblinStart };
+                        let tile = Tile{ row: row, col: col, kind: EnemyStart };
                         let bounds = wall_sprite.get_local_bounds();
-                        let moblin = RefCell::new(
-                            Moblin::new(tile.col as f32 * bounds.width, tile.row as f32 * bounds.height,
+                        let enemy = RefCell::new(
+                            Enemy::new(tile.col as f32 * bounds.width, tile.row as f32 * bounds.height,
                                         assets));
-                        enemies.push(moblin);
+                        enemies.push(enemy);
                         Some(tile)
                     },
                     _ => None

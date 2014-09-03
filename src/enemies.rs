@@ -7,7 +7,7 @@ use assets::Assets;
 use components::{Entity, Draw, Mobile, Bounded};
 use world::{World, Tile, Direction, North, East, South, West};
 
-pub struct Moblin<'a> {
+pub struct Enemy<'a> {
     x: f32,
     y: f32,
     speed: f32,
@@ -31,10 +31,10 @@ impl ::std::fmt::Show for Goal {
     }
 }
 
-impl<'a> Moblin<'a>{
-    pub fn new(x: f32, y: f32, assets: &Assets) -> Moblin {
-        let sprite = Sprite::new_with_texture(&assets.textures.moblin).unwrap();
-        Moblin{
+impl<'a> Enemy<'a>{
+    pub fn new(x: f32, y: f32, assets: &Assets) -> Enemy {
+        let sprite = Sprite::new_with_texture(&assets.textures.enemy).unwrap();
+        Enemy{
             x: x,
             y: y,
             speed: 50.,
@@ -86,16 +86,16 @@ impl<'a> Moblin<'a>{
     }
 }
 
-impl<'a> Entity for Moblin<'a> {}
+impl<'a> Entity for Enemy<'a> {}
 
-impl<'a> Draw for Moblin<'a> {
+impl<'a> Draw for Enemy<'a> {
     fn draw(&mut self, w: &mut RenderWindow) {
         self.sprite.set_position2f(self.x, self.y);
         w.draw(&self.sprite);
     }
 }
 
-impl<'a> Bounded for Moblin<'a> {
+impl<'a> Bounded for Enemy<'a> {
     fn get_bounds(&self) -> (f32, f32, f32, f32) {
         let local_bounds = self.sprite.get_local_bounds();
         (self.x, self.y, local_bounds.width, local_bounds.height)
@@ -108,7 +108,7 @@ impl<'a> Bounded for Moblin<'a> {
 }
 
 
-impl<'a> Mobile for Moblin<'a> {
+impl<'a> Mobile for Enemy<'a> {
     fn move(&mut self, direction: Direction, dt: u64, world: &World) {
         let distance = self.speed * dt as f32 / (1e9 as f32);
         match direction {
