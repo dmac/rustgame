@@ -52,8 +52,8 @@ impl<'a> Draw for Player<'a> {
 
         match self.active_item {
             Some(ref mut item) => {
-                item.set_x(self.x + 15.);
-                item.set_y(self.y + 30.);
+                item.set_x(self.x + 9.);
+                item.set_y(self.y + 25.);
                 item.draw(w);
             }
             None => {}
