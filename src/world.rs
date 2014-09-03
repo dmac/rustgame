@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::rc::Rc;
 use std::io::BufferedReader;
 use std::io::File;
 
@@ -17,24 +18,25 @@ pub enum Direction {
     West,
 }
 
-#[deriving(Eq, PartialEq, Show)]
+#[deriving(Eq, PartialEq, Show, Clone)]
 enum TileKind {
+    Empty,
     Wall,
     PlayerStart,
     MoblinStart,
 }
 
-#[deriving(Show)]
-struct Tile {
-    row: uint,
-    col: uint,
+#[deriving(Show, Clone)]
+pub struct Tile {
+    pub row: uint,
+    pub col: uint,
     kind: TileKind,
 }
 
 pub struct World<'a> {
     pub player: RefCell<Player<'a>>,
     pub enemies: RefCell<Vec<RefCell<Moblin<'a>>>>,
-    tiles: Vec<Tile>,
+    tiles: Vec<Rc<RefCell<Tile>>>,
     wall_sprite: Sprite<'a>,
 }
 
@@ -48,16 +50,21 @@ impl<'a> World<'a> {
         let mut file = BufferedReader::new(File::open(&path));
         for (row, line) in file.lines().enumerate() {
             for (col, c) in line.unwrap().as_slice().chars().enumerate() {
-                match c {
-                    '-' | '|' => tiles.push(Tile{ row: row, col: col, kind: Wall }),
-                    '@' => tiles.push(Tile{ row: row, col: col, kind: PlayerStart }),
-                    'm' => tiles.push(Tile{ row: row, col: col, kind: MoblinStart }),
-                    _ => {}
-                }
+                let tile = match c {
+                    '-' | '|' => Some(Tile{ row: row, col: col, kind: Wall }),
+                    '@' => Some(Tile{ row: row, col: col, kind: PlayerStart }),
+                    'm' => Some(Tile{ row: row, col: col, kind: MoblinStart }),
+                    _ => None
+                };
+                match tile {
+                    Some(tile) => tiles.push(Rc::new(RefCell::new(tile))),
+                    None => {}
+                };
             }
         }
-        match tiles.iter().find(|tile| tile.kind == PlayerStart) {
+        match tiles.iter().find(|tile| tile.borrow().kind == PlayerStart) {
             Some(tile) => {
+                let tile = tile.borrow();
                 let bounds = wall_sprite.get_local_bounds();
                 let (x, y) = (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height);
                 player.borrow_mut().set_x(x);
@@ -65,8 +72,9 @@ impl<'a> World<'a> {
             }
             None => {}
         }
-        match tiles.iter().find(|tile| tile.kind == MoblinStart) {
+        match tiles.iter().find(|tile| tile.borrow().kind == MoblinStart) {
             Some(tile) => {
+                let tile = tile.borrow();
                 let bounds = wall_sprite.get_local_bounds();
                 let (x, y) = (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height);
                 moblin.borrow_mut().set_x(x);
@@ -82,10 +90,21 @@ impl<'a> World<'a> {
         }
     }
 
-    fn get_tile_bounds(&self, tile: Tile) -> (f32, f32, f32, f32) {
+    pub fn get_tile_bounds(&self, tile: &Tile) -> (f32, f32, f32, f32) {
         let bounds = self.wall_sprite.get_local_bounds();
         (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height,
          bounds.width, bounds.height)
+    }
+
+    pub fn tile_at(&self, row: uint, col: uint) -> Rc<RefCell<Tile>> {
+        let rc = self.tiles.iter().find(|tile| {
+            let tile = tile.borrow();
+            tile.row == row && tile.col == col
+        }).or_else(|| None );
+        match rc {
+            Some(rc) => rc.clone(),
+            None => Rc::new(RefCell::new(Tile{ row: row, col: col, kind: Empty }))
+        }
     }
 
     pub fn tick(&self, dt: u64) {
@@ -111,8 +130,9 @@ impl<'a> World<'a> {
         for enemy in self.enemies.borrow().iter() {
             enemy.borrow_mut().draw(w);
         }
-        for &tile in self.tiles.iter() {
-            let (x, y, _, _) = self.get_tile_bounds(tile);
+        for tile in self.tiles.iter() {
+            let tile = tile.borrow();
+            let (x, y, _, _) = self.get_tile_bounds(tile.deref());
             match tile.kind {
                 Wall => {
                     self.wall_sprite.set_position2f(x, y);
@@ -127,13 +147,14 @@ impl<'a> World<'a> {
         let (entity_x, entity_y, entity_width, entity_height) = entity.get_bounds();
         let entity_aabb = FloatRect::new(entity_x, entity_y, entity_width, entity_height);
 
-        for &tile in self.tiles.iter() {
+        for tile in self.tiles.iter() {
+            let tile = tile.borrow();
             let passable = match tile.kind {
                 Wall => false,
                 _ => true,
             };
             if passable { continue }
-            let (tile_x, tile_y, tile_width, tile_height) = self.get_tile_bounds(tile);
+            let (tile_x, tile_y, tile_width, tile_height) = self.get_tile_bounds(tile.deref());
             let tile_aabb = FloatRect::new(tile_x, tile_y, tile_width, tile_height);
             match util::collide_rects(&entity_aabb, &tile_aabb, direction) {
                 Some((new_x, new_y)) => {

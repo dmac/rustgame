@@ -1,8 +1,11 @@
+use std::rand::{task_rng, Rng};
+use std::cell::RefCell;
+use std::rc::Rc;
 use rsfml::graphics::{RenderWindow, Sprite};
 
 use assets::Assets;
 use components::{Entity, Draw, Mobile, Bounded};
-use world::{World, Direction, North, East, South, West};
+use world::{World, Tile, Direction, North, East, South, West};
 
 pub struct Moblin<'a> {
     x: f32,
@@ -10,7 +13,22 @@ pub struct Moblin<'a> {
     speed: f32,
     pub health: i32,
     max_health: i32,
+    goal: Goal,
     sprite: Sprite<'a>,
+}
+
+struct Goal {
+    tile: Option<Rc<RefCell<Tile>>>,
+}
+
+impl ::std::fmt::Show for Goal {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::FormatError> {
+        let mut tile = None;
+        if self.tile.is_some() {
+            tile = Some(self.tile.as_ref().unwrap().borrow());
+        }
+        f.write(format!("Goal {{ tile: {} }}", tile).as_bytes())
+    }
 }
 
 impl<'a> Moblin<'a>{
@@ -22,17 +40,49 @@ impl<'a> Moblin<'a>{
             speed: 50.,
             health: 100,
             max_health: 100,
+            goal: Goal{ tile: None },
             sprite: sprite
         }
     }
 
+    fn random_goal(&self, world: &World) -> Goal {
+        let tile = self.goal.tile.as_ref().unwrap().borrow();
+        let mut rng = task_rng();
+        let row = (tile.row as int + rng.gen_range(-5, 5)) as uint;
+        let col = (tile.col as int + rng.gen_range(-5, 5)) as uint;
+        Goal{ tile: Some(world.tile_at(row, col)) }
+    }
+
+    fn direction_to_goal(&self, world: &World) -> Option<Direction> {
+        match self.goal.tile {
+            None => None,
+            Some(ref tile) => {
+                let tile = tile.borrow();
+                let (tile_x, tile_y, _, _) = world.get_tile_bounds(tile.deref());
+                let xdist = (tile_x - self.x) as int;
+                let ydist = (tile_y - self.y) as int;
+                if xdist > 0 { Some(East) }
+                else if xdist < 0 { Some(West) }
+                else if ydist > 0 { Some(South) }
+                else if ydist < 0 { Some(North) }
+                else { None }
+            }
+        }
+    }
+
     pub fn tick(&mut self, dt: u64, world: &World) {
-        self.move(South, dt, world);
+        if self.goal.tile.is_none() {
+            self.goal.tile = Some(world.tile_at(7, 18));
+        }
+
+        match self.direction_to_goal(world) {
+            Some(direction) => self.move(direction, dt, world),
+            None => self.goal = self.random_goal(world)
+        };
     }
 
     pub fn damage(&mut self, amount: i32) {
         self.health -= amount;
-        println!("Moblin Health: {}/{}", self.health, self.max_health);
     }
 }
 
