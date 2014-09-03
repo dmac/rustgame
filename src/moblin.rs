@@ -33,7 +33,7 @@ impl ::std::fmt::Show for Goal {
 
 impl<'a> Moblin<'a>{
     pub fn new(x: f32, y: f32, assets: &Assets) -> Moblin {
-        let sprite = Sprite::new_with_texture(assets.get_texture("moblin")).unwrap();
+        let sprite = Sprite::new_with_texture(&assets.textures.moblin).unwrap();
         Moblin{
             x: x,
             y: y,

@@ -14,7 +14,7 @@ pub struct Sword<'a> {
 
 impl<'a> Sword<'a> {
     pub fn new(x: f32, y: f32, assets: &Assets) -> Sword {
-        let sprite = Sprite::new_with_texture(assets.get_texture("sword")).unwrap();
+        let sprite = Sprite::new_with_texture(&assets.textures.sword).unwrap();
         Sword{
             x: x,
             y: y,

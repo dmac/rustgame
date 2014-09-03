@@ -41,7 +41,7 @@ fn main() -> () {
     let mut last_time = time::precise_time_ns();
     let mut fps_last_time = last_time;
     let mut fps_count = 0u;
-    let mut fps_text = Text::new_init("", assets.get_font(), 48).expect("error creating text");
+    let mut fps_text = Text::new_init("", &assets.font, 48).expect("error creating text");
     while window.is_open() {
         // Count frames and dt
         fps_count += 1;

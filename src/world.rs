@@ -42,7 +42,7 @@ pub struct World<'a> {
 
 impl<'a> World<'a> {
     pub fn new_from_file(filepath: &str, assets: &'a Assets) -> World<'a> {
-        let wall_sprite = Sprite::new_with_texture(assets.get_texture("wall")).unwrap();
+        let wall_sprite = Sprite::new_with_texture(&assets.textures.wall).unwrap();
         let mut tiles = Vec::new();
         let player = RefCell::new(Player::new(0., 0., 200., assets));
         let moblin = RefCell::new(Moblin::new(0., 0., assets));

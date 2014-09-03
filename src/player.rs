@@ -14,7 +14,7 @@ pub struct Player<'a> {
 
 impl<'a> Player<'a> {
     pub fn new(x: f32, y: f32, speed: f32, assets: &Assets) -> Player {
-        let sprite = Sprite::new_with_texture(assets.get_texture("player")).unwrap();
+        let sprite = Sprite::new_with_texture(&assets.textures.player).unwrap();
         Player{x: x, y: y, speed: speed, sprite: sprite, active_item: None}
     }
 
