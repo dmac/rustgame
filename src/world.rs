@@ -45,15 +45,30 @@ impl<'a> World<'a> {
         let wall_sprite = Sprite::new_with_texture(&assets.textures.wall).unwrap();
         let mut tiles = Vec::new();
         let player = RefCell::new(Player::new(0., 0., 200., assets));
-        let moblin = RefCell::new(Moblin::new(0., 0., assets));
+        let mut enemies = Vec::new();
         let path = Path::new(filepath);
         let mut file = BufferedReader::new(File::open(&path));
         for (row, line) in file.lines().enumerate() {
             for (col, c) in line.unwrap().as_slice().chars().enumerate() {
                 let tile = match c {
                     '-' | '|' => Some(Tile{ row: row, col: col, kind: Wall }),
-                    '@' => Some(Tile{ row: row, col: col, kind: PlayerStart }),
-                    'm' => Some(Tile{ row: row, col: col, kind: MoblinStart }),
+                    '@' => {
+                        let tile = Tile{ row: row, col: col, kind: PlayerStart };
+                        let bounds = wall_sprite.get_local_bounds();
+                        let (x, y) = (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height);
+                        player.borrow_mut().set_x(x);
+                        player.borrow_mut().set_y(y);
+                        Some(tile)
+                    },
+                    'm' => {
+                        let tile = Tile{ row: row, col: col, kind: MoblinStart };
+                        let bounds = wall_sprite.get_local_bounds();
+                        let moblin = RefCell::new(
+                            Moblin::new(tile.col as f32 * bounds.width, tile.row as f32 * bounds.height,
+                                        assets));
+                        enemies.push(moblin);
+                        Some(tile)
+                    },
                     _ => None
                 };
                 match tile {
@@ -62,29 +77,9 @@ impl<'a> World<'a> {
                 };
             }
         }
-        match tiles.iter().find(|tile| tile.borrow().kind == PlayerStart) {
-            Some(tile) => {
-                let tile = tile.borrow();
-                let bounds = wall_sprite.get_local_bounds();
-                let (x, y) = (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height);
-                player.borrow_mut().set_x(x);
-                player.borrow_mut().set_y(y);
-            }
-            None => {}
-        }
-        match tiles.iter().find(|tile| tile.borrow().kind == MoblinStart) {
-            Some(tile) => {
-                let tile = tile.borrow();
-                let bounds = wall_sprite.get_local_bounds();
-                let (x, y) = (tile.col as f32 * bounds.width, tile.row as f32 * bounds.height);
-                moblin.borrow_mut().set_x(x);
-                moblin.borrow_mut().set_y(y);
-            }
-            None => {}
-        }
         World{
             player: player,
-            enemies: RefCell::new(vec![moblin]),
+            enemies: RefCell::new(enemies),
             tiles: tiles,
             wall_sprite: wall_sprite,
         }
@@ -117,7 +112,8 @@ impl<'a> World<'a> {
         let mut i = 0u;
         while i < self.enemies.borrow().len() {
             let mut enemies = self.enemies.borrow_mut();
-            if enemies.deref()[i].borrow().health <= 0 {
+            let dead = enemies.deref()[i].borrow().health <= 0;
+            if dead {
                 enemies.remove(i);
             } else {
                 i += 1;
